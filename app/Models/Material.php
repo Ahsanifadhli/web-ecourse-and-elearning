@@ -25,4 +25,8 @@ class Material extends Model
     }
 
     // Nanti Kuis & Tugas juga relasinya ke sini
+    public function quizzes()
+    {
+        return $this->hasMany(Quiz::class);
+    }
 }

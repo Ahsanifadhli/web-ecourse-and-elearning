@@ -11,9 +11,9 @@ class CourseController extends Controller
 {
     public function show(Course $course, Request $request)
     {
-        // 1. Ambil Data Bab beserta isinya (SubMateri & Tugas)
+        // 1. Ambil Data Bab beserta isinya (SubMateri, Tugas, dan Kuis)
         // Kita load relationship-nya biar ringan
-        $course->load(['materials.subMaterials', 'materials.assignments']);
+        $course->load(['materials.subMaterials', 'materials.assignments', 'materials.quizzes.questions']);
 
         // 2. Gabungkan semua konten (SubMateri & Tugas) jadi satu urutan Linear
         // Ini trik supaya tombol Next/Prev gampang logikanya
@@ -30,6 +30,11 @@ class CourseController extends Controller
                 $assign->content_type = 'assignment'; // Penanda
                 $allContents->push($assign);
             }
+        }
+
+        foreach ($material->quizzes as $quiz) {
+            $quiz->content_type = 'quiz';
+            $allContents->push($quiz);
         }
 
         // 3. Tentukan Konten Apa yang Sedang Dibuka

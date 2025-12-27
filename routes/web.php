@@ -7,6 +7,8 @@ use App\Http\Controllers\Admin\MaterialController;
 use App\Http\Controllers\Admin\SubMaterialController; // <--- JANGAN LUPA INI BARU
 use App\Http\Middleware\IsAdmin;
 use App\Http\Controllers\Admin\AssignmentController;
+use App\Http\Controllers\Admin\QuizController;
+use App\Http\Controllers\Student\QuizController as StudentQuizController;
 
 /*
 |--------------------------------------------------------------------------
@@ -56,6 +58,18 @@ Route::middleware('auth')->group(function () {
             Route::get('/materials/{material}/assignments/create', [AssignmentController::class, 'create'])->name('materials.assignments.create');
             Route::post('/materials/{material}/assignments', [AssignmentController::class, 'store'])->name('materials.assignments.store');
             Route::delete('/assignments/{assignment}', [AssignmentController::class, 'destroy'])->name('assignments.destroy');
+
+            // CRUD Kuis (Header)
+            Route::get('/materials/{material}/quizzes/create', [QuizController::class, 'create'])->name('materials.quizzes.create');
+            Route::post('/materials/{material}/quizzes', [QuizController::class, 'store'])->name('materials.quizzes.store');
+
+            // Halaman Kelola Soal (Edit Kuis)
+            Route::get('/quizzes/{quiz}/edit', [QuizController::class, 'edit'])->name('quizzes.edit');
+            Route::delete('/quizzes/{quiz}', [QuizController::class, 'destroy'])->name('quizzes.destroy');
+
+            // Tambah & Hapus Soal
+            Route::post('/quizzes/{quiz}/questions', [QuizController::class, 'storeQuestion'])->name('quizzes.questions.store');
+            Route::delete('/questions/{question}', [QuizController::class, 'destroyQuestion'])->name('questions.destroy');
         });
 
     // --- DASHBOARD SISWA ---
@@ -71,5 +85,11 @@ Route::middleware('auth')->group(function () {
 
     Route::post('/assignments/{assignment}/submit', [App\Http\Controllers\Student\SubmissionController::class, 'store'])
         ->name('student.assignments.submit');
+
+    // Masuk Halaman Ujian
+    Route::get('/quizzes/{quiz}/take', [StudentQuizController::class, 'show'])->name('student.quizzes.take');
+
+    // Kirim Jawaban
+    Route::post('/quizzes/{quiz}/submit', [StudentQuizController::class, 'store'])->name('student.quizzes.submit');
 
 });
