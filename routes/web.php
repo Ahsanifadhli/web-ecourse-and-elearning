@@ -2,29 +2,50 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\Admin\CourseController;
+use App\Http\Middleware\IsAdmin; // <--- PENTING: Panggil Middleware yang baru dibuat
 
-Route::redirect('/', '/login'); // Sementara redirect home ke login
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+*/
 
-// Route untuk Tamu (Guest) - yang belum login
+Route::redirect('/', '/login');
+
+// --- GUEST AREA ---
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
 });
 
-// Route untuk Logout (harus login dulu baru bisa logout)
-Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
-
-// --- Dashboard Routes (Dilindungi Login) ---
+// --- MEMBER AREA ---
 Route::middleware('auth')->group(function () {
 
-    // Dashboard Admin
-    Route::get('/admin/dashboard', function () {
-        return view('admin.dashboard'); // Memanggil file view admin
-    })->name('admin.dashboard');
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    // Dashboard Siswa (Home page setelah login)
+    // --- GROUP KHUSUS ADMIN ---
+    Route::prefix('admin')
+        ->name('admin.')
+        // PERBAIKAN DI SINI: Kita panggil Class Middleware-nya, bukan fungsi
+        ->middleware(IsAdmin::class)
+        ->group(function () {
+
+            Route::get('/dashboard', function () {
+                return view('admin.dashboard');
+            })->name('dashboard');
+
+            Route::resource('courses', CourseController::class);
+        });
+
+
+    // --- DASHBOARD SISWA ---
     Route::get('/dashboard', function () {
-        return view('student.dashboard'); // Memanggil file view student
+        // Redirect Admin ke Dashboard Admin jika salah masuk
+        if (auth()->user()->role === 'admin') {
+            return redirect()->route('admin.dashboard');
+        }
+        return view('student.dashboard');
     })->name('student.dashboard');
 
 });
