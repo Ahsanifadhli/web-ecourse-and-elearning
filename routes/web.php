@@ -4,7 +4,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Admin\CourseController;
 use App\Http\Controllers\Admin\MaterialController;
+use App\Http\Controllers\Admin\SubMaterialController; // <--- JANGAN LUPA INI BARU
 use App\Http\Middleware\IsAdmin;
+use App\Http\Controllers\Admin\AssignmentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -36,22 +38,25 @@ Route::middleware('auth')->group(function () {
                 return view('admin.dashboard');
             })->name('dashboard');
 
-            // CRUD Kursus
+            // 1. CRUD Kursus (Induk)
             Route::resource('courses', CourseController::class);
 
-            // CRUD Materi (Nested: Create & Store butuh ID Course)
-            Route::prefix('courses/{course}')->name('courses.')->group(function () {
-                Route::get('/materials/create', [MaterialController::class, 'create'])->name('materials.create');
-                Route::post('/materials', [MaterialController::class, 'store'])->name('materials.store');
-            });
-
-            // CRUD Materi Spesifik (Edit, Update, Delete - Tidak butuh ID Course di URL)
-            // === BAGIAN INI YANG TADI HILANG ===
-            Route::get('/materials/{material}/edit', [MaterialController::class, 'edit'])->name('materials.edit');
-            Route::put('/materials/{material}', [MaterialController::class, 'update'])->name('materials.update');
+            // 2. CRUD Bab / Materi (Hanya Judul Bab)
+            // URL: /admin/courses/{id}/materials
+            Route::post('/courses/{course}/materials', [MaterialController::class, 'store'])->name('courses.materials.store');
             Route::delete('/materials/{material}', [MaterialController::class, 'destroy'])->name('materials.destroy');
-        });
 
+            // 3. CRUD Isi Bab / Sub-Materi (Video & PDF)
+            // URL: /admin/materials/{id_bab}/submaterials/create
+            Route::get('/materials/{material}/submaterials/create', [SubMaterialController::class, 'create'])->name('materials.submaterials.create');
+            Route::post('/materials/{material}/submaterials', [SubMaterialController::class, 'store'])->name('materials.submaterials.store');
+            Route::delete('/submaterials/{subMaterial}', [SubMaterialController::class, 'destroy'])->name('submaterials.destroy');
+
+            // CRUD TUGAS (ASSIGNMENT)
+            Route::get('/materials/{material}/assignments/create', [AssignmentController::class, 'create'])->name('materials.assignments.create');
+            Route::post('/materials/{material}/assignments', [AssignmentController::class, 'store'])->name('materials.assignments.store');
+            Route::delete('/assignments/{assignment}', [AssignmentController::class, 'destroy'])->name('assignments.destroy');
+        });
 
     // --- DASHBOARD SISWA ---
     Route::get('/dashboard', function () {
@@ -61,7 +66,10 @@ Route::middleware('auth')->group(function () {
         return view('student.dashboard');
     })->name('student.dashboard');
 
-    // Halaman Belajar Siswa
+    // Halaman Belajar (Nanti kita perbaiki lagi controller siswanya menyesuaikan struktur baru)
     Route::get('/learning/{course}', [App\Http\Controllers\CourseController::class, 'show'])->name('courses.show');
+
+    Route::post('/assignments/{assignment}/submit', [App\Http\Controllers\Student\SubmissionController::class, 'store'])
+        ->name('student.assignments.submit');
 
 });

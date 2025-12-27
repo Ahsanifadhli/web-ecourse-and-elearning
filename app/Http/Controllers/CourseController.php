@@ -3,34 +3,68 @@
 namespace App\Http\Controllers;
 
 use App\Models\Course;
-use App\Models\Material;
+use App\Models\SubMaterial;
+use App\Models\Assignment;
 use Illuminate\Http\Request;
 
 class CourseController extends Controller
 {
     public function show(Course $course, Request $request)
     {
-        // Ambil semua materi urut dari yang terlama (Urutan belajar)
-        $materials = $course->materials()->orderBy('id', 'asc')->get();
+        // 1. Ambil Data Bab beserta isinya (SubMateri & Tugas)
+        // Kita load relationship-nya biar ringan
+        $course->load(['materials.subMaterials', 'materials.assignments']);
 
-        // Cek: Apakah user sedang memilih materi tertentu dari Sidebar?
-        // Jika ada query ?material=ID, pakai itu. Jika tidak, pakai materi pertama.
-        $currentMaterialId = $request->query('material');
+        // 2. Gabungkan semua konten (SubMateri & Tugas) jadi satu urutan Linear
+        // Ini trik supaya tombol Next/Prev gampang logikanya
+        $allContents = collect();
 
-        if ($currentMaterialId) {
-            $currentMaterial = $materials->where('id', $currentMaterialId)->first();
-        } else {
-            $currentMaterial = $materials->first();
+        foreach ($course->materials as $material) {
+            // Masukkan Sub-Materi (Video/PDF)
+            foreach ($material->subMaterials as $sub) {
+                $sub->content_type = 'material'; // Penanda
+                $allContents->push($sub);
+            }
+            // Masukkan Tugas
+            foreach ($material->assignments as $assign) {
+                $assign->content_type = 'assignment'; // Penanda
+                $allContents->push($assign);
+            }
         }
 
-        // Logic untuk tombol "Selanjutnya" dan "Sebelumnya"
-        $currentIndex = $materials->search(function($item) use ($currentMaterial) {
-            return $item->id === $currentMaterial->id;
+        // 3. Tentukan Konten Apa yang Sedang Dibuka
+        $currentId = $request->query('id');
+        $currentType = $request->query('type'); // 'material' atau 'assignment'
+
+        if ($currentId && $currentType) {
+            // Cari di koleksi yang sudah kita gabung tadi
+            $currentContent = $allContents->filter(function ($item) use ($currentId, $currentType) {
+                return $item->id == $currentId && $item->content_type == $currentType;
+            })->first();
+        } else {
+            // Kalau tidak ada di URL, ambil konten pertama banget
+            $currentContent = $allContents->first();
+        }
+
+        // 4. Logic Next & Previous
+        $currentIndex = $allContents->search(function ($item) use ($currentContent) {
+            return $item === $currentContent;
         });
 
-        $nextMaterial = ($currentIndex < $materials->count() - 1) ? $materials[$currentIndex + 1] : null;
-        $prevMaterial = ($currentIndex > 0) ? $materials[$currentIndex - 1] : null;
+        $nextContent = ($currentIndex !== false && $currentIndex < $allContents->count() - 1)
+            ? $allContents[$currentIndex + 1]
+            : null;
 
-        return view('student.courses.show', compact('course', 'materials', 'currentMaterial', 'nextMaterial', 'prevMaterial'));
+        $prevContent = ($currentIndex !== false && $currentIndex > 0)
+            ? $allContents[$currentIndex - 1]
+            : null;
+
+        return view('student.courses.show', compact(
+            'course',
+            'allContents',
+            'currentContent',
+            'nextContent',
+            'prevContent'
+        ));
     }
 }

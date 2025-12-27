@@ -17,4 +17,10 @@ class Course extends Model
     {
         return $this->hasMany(Material::class);
     }
+
+    // Relasi ke Tugas
+    public function assignments()
+    {
+        return $this->hasMany(Assignment::class);
+    }
 }

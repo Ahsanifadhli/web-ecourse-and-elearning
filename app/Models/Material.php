@@ -2,18 +2,27 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Material extends Model
 {
-    use HasFactory;
-
-    // Tambahkan baris ini juga
-    protected $guarded = [];
+    protected $guarded = ['id'];
 
     public function course()
     {
         return $this->belongsTo(Course::class);
     }
+
+    // Satu Materi (Bab) punya banyak Sub-Materi (Isi)
+    public function subMaterials()
+    {
+        return $this->hasMany(SubMaterial::class);
+    }
+
+    public function assignments()
+    {
+        return $this->hasMany(Assignment::class);
+    }
+
+    // Nanti Kuis & Tugas juga relasinya ke sini
 }
