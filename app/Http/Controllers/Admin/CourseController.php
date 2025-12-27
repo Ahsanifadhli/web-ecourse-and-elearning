@@ -10,29 +10,25 @@ use Illuminate\Support\Facades\Storage;
 
 class CourseController extends Controller
 {
-    // 1. Tampilkan Daftar Kursus
     public function index()
     {
         $courses = Course::latest()->paginate(10);
         return view('admin.courses.index', compact('courses'));
     }
 
-    // 2. Form Tambah Kursus
     public function create()
     {
         return view('admin.courses.create');
     }
 
-    // 3. Simpan Kursus ke Database
     public function store(Request $request)
     {
         $request->validate([
             'title' => 'required|string|max:255',
-            'thumbnail' => 'required|image|mimes:jpeg,png,jpg|max:2048', // Maks 2MB
+            'thumbnail' => 'required|image|mimes:jpeg,png,jpg|max:2048',
             'description' => 'required',
         ]);
 
-        // Upload Gambar
         $imagePath = $request->file('thumbnail')->store('thumbnails', 'public');
 
         Course::create([
@@ -45,13 +41,21 @@ class CourseController extends Controller
         return redirect()->route('admin.courses.index')->with('success', 'Kursus berhasil dibuat!');
     }
 
-    // 4. Form Edit (Nanti sekaligus kelola materi di sini)
+    // --- BAGIAN BARU: SHOW (DETAIL) ---
+    public function show(Course $course)
+    {
+        // Ambil data materi milik kursus ini
+        $materials = $course->materials;
+
+        return view('admin.courses.show', compact('course', 'materials'));
+    }
+    // ----------------------------------
+
     public function edit(Course $course)
     {
         return view('admin.courses.edit', compact('course'));
     }
 
-    // 5. Update Kursus
     public function update(Request $request, Course $course)
     {
         $request->validate([
@@ -66,9 +70,7 @@ class CourseController extends Controller
             'description' => $request->description,
         ];
 
-        // Jika ada upload gambar baru
         if ($request->hasFile('thumbnail')) {
-            // Hapus gambar lama
             if ($course->thumbnail) {
                 Storage::disk('public')->delete($course->thumbnail);
             }
@@ -77,10 +79,9 @@ class CourseController extends Controller
 
         $course->update($data);
 
-        return redirect()->route('admin.courses.index')->with('success', 'Kursus berhasil diperbarui!');
+        return redirect()->route('admin.courses.index')->with('success', 'Kursus diperbarui!');
     }
 
-    // 6. Hapus Kursus
     public function destroy(Course $course)
     {
         if ($course->thumbnail) {
