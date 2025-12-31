@@ -47,6 +47,12 @@ class CourseController extends Controller
         // Ambil data materi milik kursus ini
         $materials = $course->materials;
 
+        $course->load([
+            'materials.subMaterials',
+            'materials.assignments.submissions', // <--- PENTING
+            'materials.quizzes.questions'
+        ]);
+
         return view('admin.courses.show', compact('course', 'materials'));
     }
     // ----------------------------------

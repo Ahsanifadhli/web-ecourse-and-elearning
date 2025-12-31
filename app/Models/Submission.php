@@ -9,7 +9,7 @@ class Submission extends Model
 {
     use HasFactory;
 
-    protected $guarded = ['id'];
+    protected $fillable = ['assignment_id', 'user_id', 'file_path', 'grade', 'feedback'];
 
     public function assignment()
     {

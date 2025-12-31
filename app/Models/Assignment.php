@@ -12,4 +12,10 @@ class Assignment extends Model
     {
         return $this->belongsTo(Material::class);
     }
+
+    // --- WAJIB ADA INI AGAR TIDAK ERROR count() on null ---
+    public function submissions()
+    {
+        return $this->hasMany(Submission::class);
+    }
 }

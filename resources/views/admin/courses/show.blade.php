@@ -4,7 +4,7 @@
 <div class="max-w-5xl mx-auto space-y-8">
 
     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex gap-6">
-        <div class="w-32 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+        <div class="w-32 h-20 bg-gray-100 rounded-lg overflow-hidden flex-0">
             <img src="{{ asset('storage/' . $course->thumbnail) }}" class="w-full h-full object-cover">
         </div>
         <div>
@@ -100,6 +100,21 @@
                                     @csrf @method('DELETE')
                                     <button class="text-gray-400 hover:text-red-500 font-bold px-2">&times;</button>
                                 </form>
+                            </div>
+                        </div>
+                    @endforeach
+
+                    @foreach($material->assignments as $assign)
+                        <div class="px-6 py-3 flex items-center justify-between hover:bg-gray-50 border-t border-gray-100 bg-orange-50/30">
+                            <div class="flex gap-2">
+                                <a href="{{ route('admin.assignments.submissions', $assign->id) }}"
+                                class="text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-bold hover:bg-indigo-200 transition flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                {{ $assign->submissions->count() }} Pengumpulan
+                                </a>
+
+                                <form action="{{ route('admin.assignments.destroy', $assign->id) }}" method="POST" ... >
+                                    </form>
                             </div>
                         </div>
                     @endforeach

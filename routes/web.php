@@ -70,6 +70,14 @@ Route::middleware('auth')->group(function () {
             // Tambah & Hapus Soal
             Route::post('/quizzes/{quiz}/questions', [QuizController::class, 'storeQuestion'])->name('quizzes.questions.store');
             Route::delete('/questions/{question}', [QuizController::class, 'destroyQuestion'])->name('questions.destroy');
+
+            // Lihat Pengumpulan Tugas
+            Route::get('/assignments/{assignment}/submissions', [AssignmentController::class, 'submissions'])
+                ->name('assignments.submissions');
+
+            // Simpan Nilai
+            Route::post('/submissions/{submission}/grade', [AssignmentController::class, 'grade'])
+                ->name('submissions.grade');
         });
 
     // --- DASHBOARD SISWA ---
