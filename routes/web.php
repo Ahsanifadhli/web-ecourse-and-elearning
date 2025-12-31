@@ -2,13 +2,14 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\Admin\CourseController;
+use App\Http\Controllers\Admin\CourseController; // Admin Course Controller
 use App\Http\Controllers\Admin\MaterialController;
-use App\Http\Controllers\Admin\SubMaterialController; // <--- JANGAN LUPA INI BARU
+use App\Http\Controllers\Admin\SubMaterialController;
 use App\Http\Middleware\IsAdmin;
 use App\Http\Controllers\Admin\AssignmentController;
 use App\Http\Controllers\Admin\QuizController;
 use App\Http\Controllers\Student\QuizController as StudentQuizController;
+// Hapus baris 'use App\Http\Controllers\CourseController;' disini agar tidak error tabrakan nama
 
 /*
 |--------------------------------------------------------------------------
@@ -31,7 +32,7 @@ Route::middleware('auth')->group(function () {
 
     // --- GROUP KHUSUS ADMIN ---
     Route::prefix('admin')
-        ->name('admin.')
+        ->name('admin.') // Otomatis menambahkan prefix 'admin.' ke semua route di bawah
         ->middleware(IsAdmin::class)
         ->group(function () {
 
@@ -43,31 +44,27 @@ Route::middleware('auth')->group(function () {
             // 1. CRUD Kursus (Induk)
             Route::resource('courses', CourseController::class);
 
-            // 2. CRUD Bab / Materi (Hanya Judul Bab)
-            // URL: /admin/courses/{id}/materials
+            // 2. CRUD Bab / Materi
             Route::post('/courses/{course}/materials', [MaterialController::class, 'store'])->name('courses.materials.store');
             Route::delete('/materials/{material}', [MaterialController::class, 'destroy'])->name('materials.destroy');
 
-            // 3. CRUD Isi Bab / Sub-Materi (Video & PDF)
-            // URL: /admin/materials/{id_bab}/submaterials/create
+            // 3. CRUD Isi Bab / Sub-Materi
             Route::get('/materials/{material}/submaterials/create', [SubMaterialController::class, 'create'])->name('materials.submaterials.create');
             Route::post('/materials/{material}/submaterials', [SubMaterialController::class, 'store'])->name('materials.submaterials.store');
             Route::delete('/submaterials/{subMaterial}', [SubMaterialController::class, 'destroy'])->name('submaterials.destroy');
 
-            // CRUD TUGAS (ASSIGNMENT)
+            // CRUD TUGAS
             Route::get('/materials/{material}/assignments/create', [AssignmentController::class, 'create'])->name('materials.assignments.create');
             Route::post('/materials/{material}/assignments', [AssignmentController::class, 'store'])->name('materials.assignments.store');
             Route::delete('/assignments/{assignment}', [AssignmentController::class, 'destroy'])->name('assignments.destroy');
 
-            // CRUD Kuis (Header)
+            // CRUD Kuis
             Route::get('/materials/{material}/quizzes/create', [QuizController::class, 'create'])->name('materials.quizzes.create');
             Route::post('/materials/{material}/quizzes', [QuizController::class, 'store'])->name('materials.quizzes.store');
 
-            // Halaman Kelola Soal (Edit Kuis)
             Route::get('/quizzes/{quiz}/edit', [QuizController::class, 'edit'])->name('quizzes.edit');
             Route::delete('/quizzes/{quiz}', [QuizController::class, 'destroy'])->name('quizzes.destroy');
 
-            // Tambah & Hapus Soal
             Route::post('/quizzes/{quiz}/questions', [QuizController::class, 'storeQuestion'])->name('quizzes.questions.store');
             Route::delete('/questions/{question}', [QuizController::class, 'destroyQuestion'])->name('questions.destroy');
 
@@ -82,6 +79,15 @@ Route::middleware('auth')->group(function () {
             // Monitoring Hasil Kuis
             Route::get('/quizzes/{quiz}/results', [QuizController::class, 'results'])
                 ->name('quizzes.results');
+
+            // Kelola Siswa
+            Route::resource('students', \App\Http\Controllers\Admin\StudentController::class)
+                ->only(['index', 'destroy']);
+
+            // Lihat Peserta Kursus (PERBAIKAN DI SINI)
+            // Hapus 'admin.' karena sudah ada di group prefix
+            Route::get('/courses/{course}/students', [\App\Http\Controllers\Admin\CourseController::class, 'students'])
+                ->name('courses.students');
         });
 
     // --- DASHBOARD SISWA ---
@@ -92,16 +98,13 @@ Route::middleware('auth')->group(function () {
         return view('student.dashboard');
     })->name('student.dashboard');
 
-    // Halaman Belajar (Nanti kita perbaiki lagi controller siswanya menyesuaikan struktur baru)
-    Route::get('/learning/{course}', [App\Http\Controllers\CourseController::class, 'show'])->name('courses.show');
+    // Halaman Belajar (Pakai Full Path Namespace biar gak tabrakan sama Admin Controller)
+    Route::get('/learning/{course}', [\App\Http\Controllers\CourseController::class, 'show'])->name('courses.show');
 
-    Route::post('/assignments/{assignment}/submit', [App\Http\Controllers\Student\SubmissionController::class, 'store'])
+    Route::post('/assignments/{assignment}/submit', [\App\Http\Controllers\Student\SubmissionController::class, 'store'])
         ->name('student.assignments.submit');
 
-    // Masuk Halaman Ujian
     Route::get('/quizzes/{quiz}/take', [StudentQuizController::class, 'show'])->name('student.quizzes.take');
-
-    // Kirim Jawaban
     Route::post('/quizzes/{quiz}/submit', [StudentQuizController::class, 'store'])->name('student.quizzes.submit');
 
 });

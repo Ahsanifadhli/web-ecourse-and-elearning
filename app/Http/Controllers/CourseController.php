@@ -1,45 +1,61 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Student; // Pastikan namespace ini sesuai folder (misal: App\Http\Controllers\Student)
 
+use App\Http\Controllers\Controller;
 use App\Models\Course;
-use App\Models\SubMaterial;
-use App\Models\Assignment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth; // <--- WAJIB ADA INI
 
 class CourseController extends Controller
 {
     public function show(Course $course, Request $request)
     {
-        // 1. Ambil Data Bab beserta isinya (SubMateri, Tugas, dan Kuis)
-        // Kita load relationship-nya biar ringan
+        // -----------------------------------------------------------
+        // 1. LOGIC AUTO-ENROLL (Pencatatan Peserta Otomatis)
+        // -----------------------------------------------------------
+        // Cek apakah user sudah terdaftar? Jika belum, attach.
+        if (!Auth::user()->courses()->where('course_id', $course->id)->exists()) {
+            Auth::user()->courses()->attach($course->id);
+        }
+
+        // -----------------------------------------------------------
+        // 2. LOAD DATA MATERI
+        // -----------------------------------------------------------
+        // Load relationship agar query ringan
         $course->load(['materials.subMaterials', 'materials.assignments', 'materials.quizzes.questions']);
 
-        // 2. Gabungkan semua konten (SubMateri & Tugas) jadi satu urutan Linear
-        // Ini trik supaya tombol Next/Prev gampang logikanya
+        // -----------------------------------------------------------
+        // 3. FLAT CONTENT (Menggabungkan semua isi jadi satu garis lurus)
+        // -----------------------------------------------------------
         $allContents = collect();
 
         foreach ($course->materials as $material) {
-            // Masukkan Sub-Materi (Video/PDF)
+
+            // A. Masukkan Video/PDF
             foreach ($material->subMaterials as $sub) {
-                $sub->content_type = 'material'; // Penanda
+                $sub->content_type = 'material';
                 $allContents->push($sub);
             }
-            // Masukkan Tugas
+
+            // B. Masukkan Tugas
             foreach ($material->assignments as $assign) {
-                $assign->content_type = 'assignment'; // Penanda
+                $assign->content_type = 'assignment';
                 $allContents->push($assign);
+            }
+
+            // C. Masukkan Kuis (PERBAIKAN: Loop ini harus DI DALAM loop material)
+            foreach ($material->quizzes as $quiz) {
+                $quiz->content_type = 'quiz';
+                $allContents->push($quiz);
             }
         }
 
-        foreach ($material->quizzes as $quiz) {
-            $quiz->content_type = 'quiz';
-            $allContents->push($quiz);
-        }
-
-        // 3. Tentukan Konten Apa yang Sedang Dibuka
+        // -----------------------------------------------------------
+        // 4. MENENTUKAN KONTEN SAAT INI (Current View)
+        // -----------------------------------------------------------
         $currentId = $request->query('id');
-        $currentType = $request->query('type'); // 'material' atau 'assignment'
+        $currentType = $request->query('type'); // 'material', 'assignment', atau 'quiz'
 
         if ($currentId && $currentType) {
             // Cari di koleksi yang sudah kita gabung tadi
@@ -47,19 +63,24 @@ class CourseController extends Controller
                 return $item->id == $currentId && $item->content_type == $currentType;
             })->first();
         } else {
-            // Kalau tidak ada di URL, ambil konten pertama banget
+            // Kalau tidak ada parameter di URL, ambil konten pertama banget
             $currentContent = $allContents->first();
         }
 
-        // 4. Logic Next & Previous
+        // -----------------------------------------------------------
+        // 5. LOGIC PREV & NEXT BUTTON
+        // -----------------------------------------------------------
+        // Cari urutan ke berapa konten yang sedang dibuka sekarang
         $currentIndex = $allContents->search(function ($item) use ($currentContent) {
             return $item === $currentContent;
         });
 
+        // Tentukan konten berikutnya
         $nextContent = ($currentIndex !== false && $currentIndex < $allContents->count() - 1)
             ? $allContents[$currentIndex + 1]
             : null;
 
+        // Tentukan konten sebelumnya
         $prevContent = ($currentIndex !== false && $currentIndex > 0)
             ? $allContents[$currentIndex - 1]
             : null;
@@ -71,5 +92,13 @@ class CourseController extends Controller
             'nextContent',
             'prevContent'
         ));
+    }
+
+    public function students(Course $course)
+    {
+        // Ambil data siswa yang terdaftar di kursus ini, urutkan dari yang terbaru gabung
+        $students = $course->students()->orderByPivot('created_at', 'desc')->get();
+
+        return view('admin.courses.students', compact('course', 'students'));
     }
 }
