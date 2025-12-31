@@ -78,6 +78,10 @@ Route::middleware('auth')->group(function () {
             // Simpan Nilai
             Route::post('/submissions/{submission}/grade', [AssignmentController::class, 'grade'])
                 ->name('submissions.grade');
+
+            // Monitoring Hasil Kuis
+            Route::get('/quizzes/{quiz}/results', [QuizController::class, 'results'])
+                ->name('quizzes.results');
         });
 
     // --- DASHBOARD SISWA ---

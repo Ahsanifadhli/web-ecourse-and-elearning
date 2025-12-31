@@ -72,6 +72,18 @@ class QuizController extends Controller
         return back()->with('success', 'Soal berhasil ditambahkan!');
     }
 
+    public function results(Quiz $quiz)
+    {
+        // Ambil data attempt (percobaan) beserta user-nya
+        // Urutkan dari nilai tertinggi
+        $attempts = \App\Models\QuizAttempt::where('quiz_id', $quiz->id)
+                    ->with('user')
+                    ->orderBy('score', 'desc')
+                    ->get();
+
+        return view('admin.quizzes.results', compact('quiz', 'attempts'));
+    }
+
     // 5. Hapus Soal
     public function destroyQuestion(Question $question)
     {
