@@ -19,8 +19,12 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name',
+        'username', // <--- Pastikan ada ini
         'email',
         'password',
+        'role',
+        'google_id', // <--- WAJIB ADA
+        'avatar',    // <--- WAJIB ADA
     ];
 
     /**
@@ -49,5 +53,11 @@ class User extends Authenticatable
     public function courses()
     {
         return $this->belongsToMany(Course::class, 'course_user')->withTimestamps();
+    }
+
+    // List materi (Video/PDF) yang sudah diselesaikan siswa
+    public function completedSubMaterials()
+    {
+        return $this->belongsToMany(SubMaterial::class, 'completions', 'user_id', 'sub_material_id');
     }
 }

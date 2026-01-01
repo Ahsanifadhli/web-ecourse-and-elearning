@@ -2,18 +2,22 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Assignment extends Model
 {
-    protected $guarded = ['id'];
+    use HasFactory;
 
+    protected $fillable = ['material_id', 'title', 'description'];
+
+    // Relasi ke Materi
     public function material()
     {
         return $this->belongsTo(Material::class);
     }
 
-    // --- WAJIB ADA INI AGAR TIDAK ERROR count() on null ---
+    // --- TAMBAHKAN INI (WAJIB) ---
     public function submissions()
     {
         return $this->hasMany(Submission::class);

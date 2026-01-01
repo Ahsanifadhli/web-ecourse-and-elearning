@@ -11,11 +11,15 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('course_user', function (Blueprint $table) {
+        Schema::create('completions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('course_id')->constrained()->onDelete('cascade');
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->timestamps(); // Untuk mencatat KAPAN siswa mulai bergabung
+            // Kita hubungkan ke sub_materials (Video/PDF)
+            $table->foreignId('sub_material_id')->constrained('sub_materials')->onDelete('cascade');
+            $table->timestamps();
+
+            // Mencegah duplikat (Satu user cuma bisa selesaiin satu materi sekali)
+            $table->unique(['user_id', 'sub_material_id']);
         });
     }
 
@@ -24,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('course_user');
+        Schema::dropIfExists('completions');
     }
 };
