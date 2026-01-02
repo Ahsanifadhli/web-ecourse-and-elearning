@@ -4,22 +4,24 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Course;
+use App\Models\Material; // <--- JANGAN LUPA IMPORT INI
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class CourseController extends Controller
 {
+    // 1. FUNGSI UTAMA PLAYER (Yang codingan Mas tadi)
     public function show(Course $course, Request $request)
     {
-        // 1. LOGIC AUTO-ENROLL (Otomatis daftar jika belum)
+        // A. LOGIC AUTO-ENROLL
         if (Auth::check() && !Auth::user()->courses()->where('course_id', $course->id)->exists()) {
             Auth::user()->courses()->attach($course->id);
         }
 
-        // 2. LOAD DATA MATERI
+        // B. LOAD DATA MATERI
         $course->load(['materials.subMaterials', 'materials.assignments', 'materials.quizzes.questions']);
 
-        // 3. FLAT CONTENT (Gabung semua materi jadi satu list urut)
+        // C. FLAT CONTENT (Gabung semua jadi satu list urut)
         $allContents = collect();
 
         foreach ($course->materials as $material) {
@@ -40,7 +42,7 @@ class CourseController extends Controller
             }
         }
 
-        // 4. TENTUKAN KONTEN SAAT INI
+        // D. TENTUKAN KONTEN SAAT INI (Berdasarkan URL ?type=...&id=...)
         $currentId = $request->query('id');
         $currentType = $request->query('type');
 
@@ -49,10 +51,11 @@ class CourseController extends Controller
                 return $item->id == $currentId && $item->content_type == $currentType;
             })->first();
         } else {
+            // Default: Ambil konten paling pertama
             $currentContent = $allContents->first();
         }
 
-        // 5. NEXT & PREV BUTTON
+        // E. NEXT & PREV BUTTON LOGIC
         $currentIndex = $allContents->search(function ($item) use ($currentContent) {
             return $item === $currentContent;
         });
@@ -70,5 +73,27 @@ class CourseController extends Controller
             'nextContent',
             'prevContent'
         ));
+    }
+
+    // 2. FUNGSI BARU UNTUK MENGATASI ERROR SIDEBAR (materials.show)
+    public function material(Material $material)
+    {
+        // Logic: Kita cari sub-materi pertama dari materi ini,
+        // lalu kita REDIRECT ke fungsi show() di atas biar player-nya jalan.
+
+        $firstSub = $material->subMaterials()->first();
+
+        if ($firstSub) {
+            // Arahkan ke player utama dengan parameter yang benar
+            return redirect()->route('courses.show', [
+                'course' => $material->course_id,
+                'type' => 'material',
+                'id' => $firstSub->id
+            ]);
+        }
+
+        // Jika materi kosong (gak punya sub-materi), balikin ke halaman depan course
+        return redirect()->route('courses.show', $material->course_id)
+            ->with('warning', 'Materi ini belum memiliki konten.');
     }
 }

@@ -20,20 +20,21 @@ class QuizController extends Controller
     public function store(Request $request, Material $material)
     {
         $request->validate([
-            'title' => 'required',
-            'time_limit' => 'required|integer|min:1',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'duration' => 'required|integer|min:1', // Validasi waktu
             'passing_score' => 'required|integer|min:0|max:100',
         ]);
 
-        $quiz = $material->quizzes()->create([
+        $material->quizzes()->create([
             'title' => $request->title,
             'description' => $request->description,
-            'time_limit' => $request->time_limit,
+            'duration' => $request->duration, // <--- PASTIKAN BARIS INI ADA
             'passing_score' => $request->passing_score,
         ]);
 
-        return redirect()->route('admin.quizzes.edit', $quiz->id)
-                         ->with('success', 'Kuis dibuat! Silakan tambah soal.');
+        return redirect()->route('admin.courses.show', $material->course_id)
+            ->with('success', 'Kuis berhasil ditambahkan! Silakan tambah soal.');
     }
 
     // 3. Halaman Edit Kuis (Kelola Soal)

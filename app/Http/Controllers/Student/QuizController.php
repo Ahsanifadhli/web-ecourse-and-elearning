@@ -5,76 +5,74 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use App\Models\Quiz;
 use App\Models\Option;
-use App\Models\QuizAttempt; // Pastikan Model ini di-import
+use App\Models\QuizAttempt;
+use App\Models\QuizAnswer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class QuizController extends Controller
 {
-    /**
-     * Menampilkan Halaman Mengerjakan Kuis (Full Screen)
-     */
     public function show(Quiz $quiz)
     {
-        // Kita load pertanyaan beserta opsi jawabannya
         $quiz->load('questions.options');
 
-        return view('student.quizzes.take', compact('quiz'));
+        // FIX: Load 'materials' langsung (GAK PAKE SECTIONS)
+        $course = $quiz->material->course->load('materials');
+
+        return view('student.quizzes.take', compact('quiz', 'course'));
     }
 
-    /**
-     * Proses Submit Jawaban & Hitung Skor
-     */
     public function store(Request $request, Quiz $quiz)
     {
         $totalQuestions = $quiz->questions->count();
         $correctAnswers = 0;
 
-        // Cek jawaban yang dikirim user
+        $attempt = QuizAttempt::updateOrCreate(
+            ['quiz_id' => $quiz->id, 'user_id' => Auth::id()],
+            ['score' => 0]
+        );
+
+        QuizAnswer::where('quiz_attempt_id', $attempt->id)->delete();
+
         if ($request->answers) {
             foreach ($request->answers as $questionId => $optionId) {
-                // Cari opsi yang dipilih di database
                 $option = Option::find($optionId);
-
-                // Validasi:
-                // 1. Opsi harus ada
-                // 2. Opsi harus milik pertanyaan yang benar (mencegah kecurangan inspect element)
-                // 3. Opsi tersebut adalah jawaban benar (is_correct = 1)
-                if ($option && $option->question_id == $questionId && $option->is_correct) {
-                    $correctAnswers++;
+                if ($option && $option->question_id == $questionId) {
+                    if ($option->is_correct) {
+                        $correctAnswers++;
+                    }
+                    QuizAnswer::create([
+                        'quiz_attempt_id' => $attempt->id,
+                        'question_id' => $questionId,
+                        'option_id' => $optionId
+                    ]);
                 }
             }
         }
 
-        // Hitung Skor (Skala 0 - 100)
-        // Mencegah error division by zero jika soal 0
         $score = ($totalQuestions > 0) ? round(($correctAnswers / $totalQuestions) * 100) : 0;
+        $attempt->update(['score' => $score]);
 
-        // Simpan ke Database
-        // Menggunakan updateOrCreate:
-        // - Jika user ini SUDAH pernah ngerjain kuis ini -> UPDATE nilai lama.
-        // - Jika user BELUM pernah ngerjain -> CREATE data baru.
-        QuizAttempt::updateOrCreate(
-            [
-                'quiz_id' => $quiz->id,
-                'user_id' => Auth::id()
-            ],
-            [
-                'score' => $score
-            ]
-        );
+        return redirect()->route('student.quizzes.results', $quiz->id)
+            ->with('success', 'Kuis selesai dikirim!');
+    }
 
-        // Tentukan pesan status berdasarkan KKM
-        $statusMessage = ($score >= $quiz->passing_score)
-            ? "Selamat! Anda Lulus dengan nilai $score."
-            : "Nilai Anda $score (Di bawah KKM $quiz->passing_score). Silakan coba lagi.";
+    public function results(Quiz $quiz)
+    {
+        $attempt = QuizAttempt::where('quiz_id', $quiz->id)
+                    ->where('user_id', Auth::id())
+                    ->latest()
+                    ->firstOrFail();
 
-        // Redirect kembali ke halaman Course (Materi)
-        // Kita kirim parameter 'type' & 'id' supaya halaman langsung ngebuka tab Kuis tadi
-        return redirect()->route('courses.show', [
-            'course' => $quiz->material->course_id,
-            'type' => 'quiz',
-            'id' => $quiz->id
-        ])->with('success', 'Kuis selesai dikirim. ' . $statusMessage);
+        $quiz->load(['questions.options']);
+
+        $userAnswers = QuizAnswer::where('quiz_attempt_id', $attempt->id)
+                        ->pluck('option_id', 'question_id')
+                        ->toArray();
+
+        // FIX: Load 'materials' langsung
+        $course = $quiz->material->course->load('materials');
+
+        return view('student.quizzes.result', compact('quiz', 'attempt', 'userAnswers', 'course'));
     }
 }

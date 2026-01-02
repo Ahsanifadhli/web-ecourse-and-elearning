@@ -3,19 +3,26 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\GoogleController;
+
+// Controllers Admin
 use App\Http\Controllers\Admin\CourseController;
 use App\Http\Controllers\Admin\MaterialController;
 use App\Http\Controllers\Admin\SubMaterialController;
 use App\Http\Controllers\Admin\AssignmentController;
 use App\Http\Controllers\Admin\QuizController;
+use App\Http\Controllers\Admin\StudentController;
+
+// Controllers Student
 use App\Http\Controllers\Student\DashboardController;
 use App\Http\Controllers\Student\QuizController as StudentQuizController;
+
+// Middleware
 use App\Http\Middleware\IsAdmin;
-use App\Http\Controllers\GoogleController;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes (FINAL & CLEAN)
+| Web Routes (FINAL & FIXED)
 |--------------------------------------------------------------------------
 */
 
@@ -57,16 +64,29 @@ Route::middleware('auth')->group(function () {
     // --- DASHBOARD SISWA ---
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('student.dashboard');
 
-    // Halaman Belajar (Video/Materi)
+    // --- HALAMAN BELAJAR (COURSE PLAYER) ---
+    // 1. Masuk via Course ID (Default)
     Route::get('/learning/{course}', [\App\Http\Controllers\CourseController::class, 'show'])->name('courses.show');
 
-    // Kirim Tugas & Kuis
-    Route::post('/assignments/{assignment}/submit', [\App\Http\Controllers\Student\SubmissionController::class, 'store'])->name('student.assignments.submit');
-    Route::get('/quizzes/{quiz}/take', [StudentQuizController::class, 'show'])->name('student.quizzes.take');
-    Route::post('/quizzes/{quiz}/submit', [StudentQuizController::class, 'store'])->name('student.quizzes.submit');
+    // 2. Masuk via Material ID (Redirect Logic)
+    Route::get('/learning/material/{material}', [\App\Http\Controllers\CourseController::class, 'material'])->name('materials.show');
 
     // Tandai Materi Selesai
     Route::post('/learning/{subMaterial}/complete', [\App\Http\Controllers\Student\CompletionController::class, 'toggle'])->name('student.completions.toggle');
+
+    // --- FITUR TUGAS (SISWA) ---
+    Route::post('/assignments/{assignment}/submit', [\App\Http\Controllers\Student\SubmissionController::class, 'store'])->name('student.assignments.submit');
+
+    // --- FITUR KUIS (SISWA) ---
+    // 1. Ambil Kuis (Halaman Soal)
+    Route::get('/quizzes/{quiz}/take', [StudentQuizController::class, 'show'])->name('student.quizzes.take');
+
+    // 2. Kirim Jawaban (INI PERBAIKANNYA)
+    // Saya ganti jadi 'student.quizzes.submit' supaya cocok dengan take.blade.php
+    Route::post('/quizzes/{quiz}/submit', [StudentQuizController::class, 'store'])->name('student.quizzes.submit');
+
+    // 3. Lihat Hasil & Pembahasan
+    Route::get('/quizzes/{quiz}/results', [StudentQuizController::class, 'results'])->name('student.quizzes.results');
 
 
     // --- 5. GROUP KHUSUS ADMIN ---
@@ -77,11 +97,10 @@ Route::middleware('auth')->group(function () {
         // A. Resource Controllers (CRUD Utama)
         Route::resource('courses', CourseController::class);
 
-        // --- CUSTOM ROUTE COURSES ---
+        // Custom Route: Lihat Siswa di Kursus
         Route::get('/courses/{course}/students', [CourseController::class, 'students'])->name('courses.students');
-        // ----------------------------
 
-        Route::resource('students', \App\Http\Controllers\Admin\StudentController::class)->only(['index', 'destroy']);
+        Route::resource('students', StudentController::class)->only(['index', 'destroy']);
 
 
         // B. Route Spesifik Materi & Sub-Materi
@@ -99,7 +118,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/assignments/{assignment}/submissions', [AssignmentController::class, 'submissions'])->name('assignments.submissions');
         Route::post('/submissions/{submission}/grade', [AssignmentController::class, 'grade'])->name('submissions.grade');
 
-        // D. Route Spesifik Kuis
+        // D. Route Spesifik Kuis (ADMIN)
         Route::get('/materials/{material}/quizzes/create', [QuizController::class, 'create'])->name('materials.quizzes.create');
         Route::post('/materials/{material}/quizzes', [QuizController::class, 'store'])->name('materials.quizzes.store');
         Route::get('/quizzes/{quiz}/edit', [QuizController::class, 'edit'])->name('quizzes.edit');

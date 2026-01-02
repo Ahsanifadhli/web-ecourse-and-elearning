@@ -9,24 +9,34 @@ class Course extends Model
 {
     use HasFactory;
 
-    // Tambahkan baris ini (Artinya: Tidak ada kolom yang dijaga/dilarang diisi)
     protected $guarded = [];
 
-    // Relasi ke Materi (Nanti kita butuh ini)
+    /**
+     * Relasi ke Materi (Langsung ke Material, tanpa Section/Bab)
+     * Digunakan di QuizController dan View
+     */
     public function materials()
     {
         return $this->hasMany(Material::class);
     }
 
-    // Relasi ke Tugas
-    public function assignments()
-    {
-        return $this->hasMany(Assignment::class);
-    }
-
+    /**
+     * Relasi ke Siswa (Student)
+     * Digunakan di HomeController (Halaman Depan) untuk menghitung jumlah siswa
+     * Asumsi tabel perantara bernama 'course_user' (standar Laravel)
+     */
     public function students()
     {
-        return $this->belongsToMany(User::class, 'course_user')
-                    ->withTimestamps(); // Agar created_at terbawa
+        return $this->belongsToMany(User::class, 'course_user', 'course_id', 'user_id')
+                    ->withTimestamps();
     }
+
+    /**
+     * Relasi opsional jika nanti dibutuhkan (misal untuk mengambil Section jika Mas berubah pikiran)
+     * Tapi untuk sekarang biarkan kosong atau komentar saja agar tidak error.
+     */
+    // public function sections()
+    // {
+    //     return $this->hasMany(Section::class);
+    // }
 }
