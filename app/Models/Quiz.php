@@ -9,21 +9,28 @@ class Quiz extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['material_id', 'title', 'description', 'passing_score']; // Pastikan passing_score ada
+    protected $fillable = [
+        'material_id',
+        'title',
+        'description',
+        'time_limit',
+        'passing_score',
+    ];
 
+    // Relasi ke Materi (Induk)
     public function material()
     {
         return $this->belongsTo(Material::class);
     }
 
+    // Relasi ke Soal
     public function questions()
     {
         return $this->hasMany(Question::class);
     }
 
-    // --- TAMBAHKAN INI (WAJIB) ---
-    // Relasi untuk melihat siapa saja yang sudah mengerjakan kuis ini
-    public function attempts() // Bisa juga dinamakan 'results'
+    // --- INI YANG TADI HILANG (RELASI KE PERCOBAAN KUIS) ---
+    public function attempts()
     {
         return $this->hasMany(QuizAttempt::class);
     }

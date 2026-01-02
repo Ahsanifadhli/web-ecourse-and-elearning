@@ -36,9 +36,9 @@ return [
     ],
 
     'google' => [
-        'client_id' => 'xxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com',
-        'client_secret' => 'xxxxxxxxxxxxxxxxxxxxxx',
-        'redirect' => 'http://',
+        'client_id' => 'xxxxx.apps.googleusercontent.com',
+        'client_secret' => 'xxxxxx',
+        'redirect' => 'xxxxxx',
     ],
 
 ];
