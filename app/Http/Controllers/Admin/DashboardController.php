@@ -3,41 +3,29 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Course;
 use App\Models\User;
-use App\Models\Submission;
-use Illuminate\Support\Facades\DB;
+use App\Models\Course;
+use App\Models\QuizAttempt;
+use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        // 1. STATISTIK KARTU (Cards)
-        $totalCourses = Course::count();
-
+        // 1. Hitung Total Siswa (Asumsi role 'student' atau user biasa)
+        // Kalau Mas gak punya kolom role, hapus where-nya
         $totalStudents = User::where('role', 'student')->count();
 
-        // Menghitung rata-rata nilai dari seluruh tugas yang sudah dinilai
-        $averageGrade = Submission::avg('grade') ?? 0; // Jika null, anggap 0
+        // 2. Hitung Total Kursus
+        $totalCourses = Course::count();
 
-        // Total Siswa Mendaftar (Enrollments)
-        // Kita hitung baris di tabel pivot 'course_user'
-        $totalEnrollments = DB::table('course_user')->count();
+        // 3. Ambil 5 Aktivitas Kuis Terakhir (Siapa yang barusan ngerjain?)
+        // Pastikan Model QuizAttempt sudah ada relasi ke 'user' dan 'quiz'
+        $recentActivities = QuizAttempt::with(['user', 'quiz'])
+                            ->latest()
+                            ->take(5)
+                            ->get();
 
-        // 2. DATA UNTUK GRAFIK (Chart)
-        // Kita ambil Judul Kursus dan Jumlah Siswanya
-        $coursesData = Course::withCount('students')->get(); // Menggunakan withCount untuk hitung relasi students
-
-        $chartLabels = $coursesData->pluck('title'); // Ambil judul kursus
-        $chartValues = $coursesData->pluck('students_count'); // Ambil jumlah siswanya
-
-        return view('admin.dashboard', compact(
-            'totalCourses',
-            'totalStudents',
-            'averageGrade',
-            'totalEnrollments',
-            'chartLabels',
-            'chartValues'
-        ));
+        return view('admin.dashboard', compact('totalStudents', 'totalCourses', 'recentActivities'));
     }
 }
