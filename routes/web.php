@@ -102,6 +102,8 @@ Route::middleware('auth')->group(function () {
 
         Route::resource('students', StudentController::class)->only(['index', 'destroy']);
 
+        Route::put('/students/{student}/reset-password', [StudentController::class, 'resetPassword'])
+    ->name('students.resetPassword');
 
         // B. Route Spesifik Materi & Sub-Materi
         Route::post('/courses/{course}/materials', [MaterialController::class, 'store'])->name('courses.materials.store');

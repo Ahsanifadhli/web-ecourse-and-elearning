@@ -34,26 +34,29 @@ class AssignmentController extends Controller
 
     public function submissions(Assignment $assignment)
     {
-        // Ambil data pengumpulan beserta data siswanya
-        $submissions = $assignment->submissions()->with('user')->get();
+        // Tambah 'latest()' biar yang baru upload ada di paling atas
+        $submissions = $assignment->submissions()->with('user')->latest()->get();
 
         return view('admin.assignments.submissions', compact('assignment', 'submissions'));
     }
 
     // Proses Simpan Nilai & Feedback
+    // app/Http/Controllers/Admin/AssignmentController.php
+
     public function grade(Request $request, \App\Models\Submission $submission)
     {
         $request->validate([
             'grade' => 'required|integer|min:0|max:100',
-            'feedback' => 'nullable|string'
+            'feedback' => 'nullable|string' // Validasi untuk catatan
         ]);
 
         $submission->update([
             'grade' => $request->grade,
-            'feedback' => $request->feedback
+            'feedback' => $request->feedback, // Simpan catatan
+            'status' => 'graded' // Update status jadi sudah dinilai
         ]);
 
-        return back()->with('success', 'Nilai berhasil disimpan.');
+        return back()->with('success', 'Nilai dan catatan berhasil disimpan!');
     }
 
     // Hapus Tugas

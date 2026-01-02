@@ -11,35 +11,44 @@ use Illuminate\Support\Facades\Storage;
 
 class SubmissionController extends Controller
 {
-    public function store(Request $request, $assignmentId)
+    public function store(Request $request, Assignment $assignment)
     {
+        // 1. Validasi "Longgar" (Boleh File Apapun)
         $request->validate([
-            'file' => 'required|file|max:51200', // Maksimal 50MB
+            // Max 50MB (51200 KB). Mimes lengkap biar video/gambar masuk.
+            'file' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpg,jpeg,png,mp4,mov,avi,zip,rar|max:51200',
+            'text_submission' => 'nullable|string',
         ]);
 
-        // Cek apakah siswa ini sudah pernah mengumpulkan sebelumnya?
-        // Jika ya, hapus file lama (Re-submit) agar tidak menumpuk sampah
-        $existingSubmission = Submission::where('assignment_id', $assignmentId)
-                                ->where('user_id', Auth::id())
-                                ->first();
-
-        if ($existingSubmission) {
-            Storage::disk('public')->delete($existingSubmission->file_path);
-            $existingSubmission->delete();
+        // Cek: Jangan sampai kosong melompong (Gak kirim file, gak kirim teks)
+        if (!$request->hasFile('file') && !$request->text_submission) {
+            return response()->json(['error' => 'Mohon isi jawaban teks atau upload file.'], 400);
         }
 
-        // Upload File Baru
-        // Kita simpan di folder: public/submissions/USER_ID
-        $filePath = $request->file('file')->store('submissions/' . Auth::id(), 'public');
+        // 2. Proses Upload File (Jika Ada)
+        $filePath = null;
+        if ($request->hasFile('file')) {
+            $file = $request->file('file');
+            // Simpan dengan nama asli biar gampang dikenali
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $filePath = $file->storeAs('submissions', $filename, 'public');
+        }
 
-        // Simpan Data ke Database
-        Submission::create([
-            'assignment_id' => $assignmentId,
-            'user_id' => Auth::id(),
-            'file_path' => $filePath,
-            'grade' => null, // Nilai kosong dulu karena belum diperiksa Admin
-        ]);
+        // 3. Simpan ke Database
+        // Kita pakai updateOrCreate biar kalau siswa kirim ulang, data lama tertimpa (Revisi)
+        Submission::updateOrCreate(
+            [
+                'assignment_id' => $assignment->id,
+                'user_id' => auth()->id()
+            ],
+            [
+                'file_path' => $filePath, // Bisa null kalau cuma teks
+                'text_submission' => $request->text_submission, // Kolom baru
+                'status' => 'submitted',
+                'submitted_at' => now(),
+            ]
+        );
 
-        return back()->with('success', 'Tugas berhasil dikumpulkan!');
+        return response()->json(['message' => 'Berhasil!']);
     }
 }
