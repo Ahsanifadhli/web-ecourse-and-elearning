@@ -17,6 +17,8 @@ use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Student\DashboardController;
 use App\Http\Controllers\Student\QuizController as StudentQuizController;
 
+use App\Http\Controllers\Student\CertificateController;
+
 // Middleware
 use App\Http\Middleware\IsAdmin;
 
@@ -87,6 +89,9 @@ Route::middleware('auth')->group(function () {
 
     // 3. Lihat Hasil & Pembahasan
     Route::get('/quizzes/{quiz}/results', [StudentQuizController::class, 'results'])->name('student.quizzes.results');
+
+    Route::get('/courses/{course}/certificate', [CertificateController::class, 'download'])
+    ->name('student.certificate.download');
 
 
     // --- 5. GROUP KHUSUS ADMIN ---
