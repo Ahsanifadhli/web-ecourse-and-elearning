@@ -12,7 +12,7 @@ class HomeController extends Controller
         // Ambil semua kursus untuk ditampilkan di halaman depan
         $courses = Course::withCount('students')->latest()->get();
 
-        return view('welcome', compact('courses'));
+        return view('front.home', compact('courses'));
     }
 
     public function courseDetail(Course $course)
