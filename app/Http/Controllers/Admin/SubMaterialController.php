@@ -17,30 +17,42 @@ class SubMaterialController extends Controller
 
     public function store(Request $request, Material $material)
     {
+        // 1. Validasi
         $request->validate([
-            'title' => 'required',
-            'type' => 'required|in:video,pdf',
-            'file' => 'required|file|max:102400',
+            'title' => 'required|string|max:255',
+            'type' => 'required|in:file,youtube',
+            // Validasi bersyarat (Conditional Validation)
+            'link' => 'nullable|required_if:type,youtube|url',
+            'file' => 'nullable|required_if:type,file|file|mimes:pdf,mp4,doc,docx,ppt,pptx|max:102400',
+            'description' => 'nullable|string'
         ]);
 
-        // Validasi File Mime Type (Sama seperti sebelumnya)
-        if ($request->type === 'video') {
-            $request->validate(['file' => 'mimetypes:video/mp4,video/mpeg,video/quicktime']);
-        } else {
-            $request->validate(['file' => 'mimetypes:application/pdf']);
-        }
-
-        $filePath = $request->file('file')->store('submaterials', 'public');
-
-        $material->subMaterials()->create([
+        // 2. Siapkan Data Dasar
+        $data = [
+            'material_id' => $material->id,
             'title' => $request->title,
             'type' => $request->type,
-            'file_path' => $filePath,
-            'description' => $request->description,
-        ]);
+            'description' => $request->description, // <-- Tambahkan ini biar deskripsi tersimpan
+        ];
 
-        return redirect()->route('admin.courses.show', $material->course_id)
-                         ->with('success', 'Konten berhasil ditambahkan ke ' . $material->title);
+        // 3. Logika Percabangan
+        if ($request->type === 'youtube') {
+            // Simpan Link YouTube
+            $data['link'] = $request->link; // Pastikan key-nya 'link', bukan 'url'
+            $data['file_path'] = null;
+            
+        } else {
+            // Simpan File Upload
+            if ($request->hasFile('file')) {
+                $data['file_path'] = $request->file('file')->store('materials', 'public');
+            }
+            $data['link'] = null;
+        }
+
+        // 4. Simpan ke Database
+        \App\Models\SubMaterial::create($data);
+
+        return back()->with('success', 'Materi berhasil ditambahkan!');
     }
 
     public function destroy(SubMaterial $subMaterial)

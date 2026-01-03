@@ -9,7 +9,7 @@ class SubMaterial extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['material_id', 'title', 'type', 'url', 'file_path', 'description'];
+    protected $fillable = ['material_id', 'title', 'type', 'link', 'file_path', 'description'];
 
     public function material()
     {
