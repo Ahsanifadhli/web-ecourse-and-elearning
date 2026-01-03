@@ -49,12 +49,10 @@
                            Edit Info
                         </a>
 
-                        <form action="{{ route('admin.courses.destroy', $course->id) }}" method="POST" onsubmit="return confirm('Yakin hapus kursus ini?');">
-                            @csrf @method('DELETE')
-                            <button type="submit" class="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded border border-transparent hover:border-red-200 transition">
-                                Hapus
-                            </button>
-                        </form>
+                        <button onclick="confirmDelete('{{ route('admin.courses.destroy', $course->id) }}')"
+                                class="text-red-600 hover:text-red-900 ml-2">
+                            x
+                        </button>
                     </td>
                 </tr>
                 @empty

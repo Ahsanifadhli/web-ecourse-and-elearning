@@ -63,14 +63,12 @@
                                 </button>
                             </form>
 
-                            {{-- TOMBOL HAPUS --}}
-                            <form action="{{ route('admin.students.destroy', $student->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Yakin hapus siswa ini? Data nilai dan tugas akan hilang permanen.');">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="text-red-600 hover:text-red-800 font-medium text-sm bg-red-50 px-3 py-1 rounded border border-red-200 hover:bg-red-100 transition">
-                                    🗑️ Hapus
-                                </button>
-                            </form>
+                            {{-- TOMBOL HAPUS (MODAL POP-UP) --}}
+                            <button type="button" 
+                                    onclick="confirmDelete('{{ route('admin.students.destroy', $student->id) }}')" 
+                                    class="text-red-600 hover:text-red-800 font-medium text-sm bg-red-50 px-3 py-1 rounded border border-red-200 hover:bg-red-100 transition">
+                                🗑️ Hapus
+                            </button>
 
                         </td>
                     </tr>
